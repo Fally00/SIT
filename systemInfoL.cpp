@@ -1,13 +1,16 @@
-#include "systemInfo.h"
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <filesystem>
-#include <iomanip>
-#include <cstdlib>
+#include "systemInfo.h"  // Header with function declarations
+#include <fstream>       // For file input/output (reading /proc and /etc files)
+#include <sstream>       // For string stream parsing (in getRam)
+#include <iostream>      // Standard I/O (not directly used but common)
+#include <filesystem>    // For std::filesystem::space (replaces statvfs for disk info)
+#include <iomanip>       // For std::fixed and std::setprecision (in getRam formatting)
+#include <cstdlib>       // For getenv (replaces getlogin/getpwuid for username)
 
+
+// Implementation of SystemInfo functions for Linux
 namespace SystemInfo {
 
+    // Returns the operating system name
     std::string getOSName() {
         std::ifstream file("/etc/os-release");
         std::string line;
@@ -26,6 +29,7 @@ namespace SystemInfo {
         return "Linux";
     }
 
+    // Returns the CPU model name
     std::string getCPUModel() {
         std::ifstream file("/proc/cpuinfo");
         std::string line;
@@ -40,6 +44,7 @@ namespace SystemInfo {
         return "Unknown";
     }
 
+    // Returns the ram size in GB
     std::string getRam() {
         std::ifstream file("/proc/meminfo");
         std::string line;
@@ -58,6 +63,7 @@ namespace SystemInfo {
         return "Unknown";
     }
 
+    // Returns the total physical disk size in GB
     uint64_t getDisk() {
         try {
             auto space = std::filesystem::space("/");
@@ -67,6 +73,7 @@ namespace SystemInfo {
         }
     }
 
+    // Returns the uptime in seconds
     int getUptime() {
         std::ifstream file("/proc/uptime");
         double uptime_seconds;
@@ -74,6 +81,7 @@ namespace SystemInfo {
         return static_cast<int>(uptime_seconds);
     }
 
+    // Returns the current user name
     std::string getUserName() {
         char* username = getenv("USER");
         if (username) {
