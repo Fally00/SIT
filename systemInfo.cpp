@@ -2,19 +2,19 @@
 
 #ifdef _WIN32
 #define UNICODE
-#include <windows.h>         // For Windows API functions
-#include <intrin.h>         // For __cpuid
+#include <windows.h>          // For Windows API functions
+#include <intrin.h>          // For __cpuid
 #include <cstring>          // For memcpy
 #endif
 
-#include <cstdint>         // For uint64_t
-#include <string>         // For std::string
+#include <cstdint>          // For uint64_t
+#include <string>          // For std::string
 #include <sstream>        // For std::ostringstream
 #include <iomanip>       // For std::fixed and std::setprecision
 
 #ifndef _WIN32
-#include <fstream>       // For file input/output (reading /proc and /etc files)
-#include <filesystem>    // For std::filesystem::space (replaces statvfs for disk info)
+#include <fstream>         // For file input/output (reading /proc and /etc files)
+#include <filesystem>     // For std::filesystem::space (replaces statvfs for disk info)
 #include <cstdlib>       // For getenv (replaces getlogin/getpwuid for username)
 #endif
 
