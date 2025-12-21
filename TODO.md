@@ -9,4 +9,7 @@
 - [x] Making main file 
 - [x] making good welcom sign
 - [x] Making this thing works (Critical)
+- [x] Cross Platform support 
+- [x] Deletion of the unneccary files that got merged 
+- [x] Improving logic and error handling
 - [ ] For future tools will be added like system scan , maybe more stuff idk yet
