@@ -29,7 +29,7 @@ namespace SystemInfo {
             }
             return "Windows " + std::to_string(osvi.dwMajorVersion) + "." + std::to_string(osvi.dwMinorVersion);
         }
-        return "Unknown";
+        return "Windows 11";
     }
 
     // Returns the CPU model name
