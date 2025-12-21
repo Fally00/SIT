@@ -10,13 +10,12 @@ namespace SystemInfo {
     std::string getCPUModel();
     double getCPUusage();
 
-    // Returns the ram size in GB
+    // Returns the ram size in GB & RAM usage
     std::string getRam();
     double getRamUsage();
 
     // Returns the total physical disk size in GB
     uint64_t getDisk();
-    double getDiskUsage();
     
     // Returns the uptime in seconds
     int getUptime();
