@@ -30,7 +30,7 @@ int main() {
     do {
         cout << BLUE << BOLD << logo << RESET << endl;
     cout << BLUE << "==============================================" << RESET << endl;
-    cout << MAGENTA << BOLD << "System Information Tool" << RESET << endl;
+    cout << MAGENTA << BOLD << "System Insight Tool" << RESET << endl;
     cout << MAGENTA << BOLD << "       To Start the System Info tool Press {1} & {0} to Exit" << RESET << endl;
     cout << BLUE << "==============================================" << RESET << endl;
 
