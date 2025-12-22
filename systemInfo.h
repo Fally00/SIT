@@ -17,6 +17,7 @@ namespace SystemInfo {
     std::string getRamhp();
     // Returns the total physical disk size in GB & disk health score
     uint64_t getDisk();
+    double getDiskUsage();
     uint64_t getDiskhp();
     // Returns the uptime in seconds
     int getUptime();

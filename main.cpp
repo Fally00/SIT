@@ -52,6 +52,7 @@ int main() {
         cout << MAGENTA << BOLD << "---------- System Usage Info ----------" << RESET << endl;
         cout << "CPU Usage: " << SystemInfo::getCPUusage() << " %" << endl;
         cout << "RAM Usage: " << SystemInfo::getRamUsage() << " %" << endl;
+        cout << "Disk Usage: " << SystemInfo::getDiskUsage() << " %" << endl;
         cout << BLUE << "==============================================" << RESET << endl;
 
         //System Health Info
