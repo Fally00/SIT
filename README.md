@@ -30,6 +30,7 @@ making it useful for learning, diagnostics, and future system monitoring extensi
 - RAM health score based on its usage
 - DISK health score based on its usage
 
+![System Start Menu](assest/sit2.png)
 
 All usage values are calculated using **native OS APIs**, not estimates.
 
