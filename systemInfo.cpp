@@ -226,6 +226,34 @@ namespace SystemInfo {
 #endif
     }
 
+    // Returns the CPU health score
+    std::string getCPUhp() {
+#ifdef _WIN32
+        double usage = getCPUusage();
+        if (usage < 50.0) {
+            return "Good";
+        } else if (usage < 80.0) {
+            return "Moderate";
+        } else {
+            return "Poor";
+        }
+    }
+
+#else
+    // Linux implementation
+        double usage = getCPUusage();
+        if (usage < 50.0) {
+            return "Good";
+        } else if (usage < 80.0) {
+            return "Moderate";
+        } else {
+            return "Poor";
+        }
+    }
+
+#endif
+
+
     // Returns the RAM usage percentage
     double getRamUsage() {
 #ifdef _WIN32
@@ -261,6 +289,31 @@ namespace SystemInfo {
 #endif
     }
 
+    // Returns the RAM health score
+    std::string getRamhp() {
+#ifdef _WIN32
+        double usage = getRamUsage();
+        if (usage < 50.0) {
+            return "Good";
+        } else if (usage < 80.0) {
+            return "Moderate";
+        } else {
+            return "Poor";
+        }
+    }
+#else
+    // Linux implementation
+        double usage = getRamUsage();
+        if (usage < 50.0) {
+            return "Good";
+        } else if (usage < 80.0) {
+            return "Moderate";
+        } else {
+            return "Poor";
+        }
+    }
+#endif
+
     // Returns the disk usage percentage
     double getDiskUsage() {
 #ifdef _WIN32
@@ -282,5 +335,30 @@ namespace SystemInfo {
         }
 #endif
     }
+
+    // Returns the disk health score
+    uint64_t getDiskhp() {
+#ifdef _WIN32
+        double usage = getDiskUsage();
+        if (usage < 70.0) {
+            return 100;
+        } else if (usage < 90.0) {
+            return 70;
+        } else {
+            return 40;
+        }
+    }
+#else
+    // Linux implementation
+        double usage = getDiskUsage();
+        if (usage < 70.0) {
+            return 100;
+        } else if (usage < 90.0) {
+            return 70;
+        } else {
+            return 40;
+        }
+    }
+#endif
 
 }

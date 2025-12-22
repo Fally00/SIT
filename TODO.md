@@ -20,7 +20,7 @@
 
 - [x] Adding a Usage indicator 
 - [x] Adjusting main 
-- [ ] Adding a System Health Score indicator 
+- [x] Adding a System Health Score indicator 
 - [ ] Improving the Quality of the new add-ons
 - [ ] Improving CLI abit 
 - [ ] Adding Problems scanner (Errors/Weakness) in the system indicators 

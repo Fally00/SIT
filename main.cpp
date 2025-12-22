@@ -53,6 +53,13 @@ int main() {
         cout << "CPU Usage: " << SystemInfo::getCPUusage() << " %" << endl;
         cout << "RAM Usage: " << SystemInfo::getRamUsage() << " %" << endl;
         cout << BLUE << "==============================================" << RESET << endl;
+
+        //System Health Info
+        cout << MAGENTA << BOLD << "---------- System Health Info ----------" << RESET << endl;
+        cout << "CPU Health: " << SystemInfo::getCPUhp() << endl;
+        cout << "RAM Health: " << SystemInfo::getRamhp() << endl;
+        cout << "Disk Health: " << SystemInfo::getDiskhp() << endl;
+        cout << BLUE << "==============================================" << RESET << endl;
     }
     //Exit System Info Tool
     else if(choice == 0){
