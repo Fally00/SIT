@@ -21,6 +21,13 @@ making it useful for learning, diagnostics, and future system monitoring extensi
 ### System Usage
 - CPU usage percentage
 - RAM usage percentage
+- DISK usage percentage
+
+### System Health Score 
+- CPU health score based on its usage
+- RAM health score based on its usage
+- DISK health score based on its usage
+
 
 All usage values are calculated using **native OS APIs**, not estimates.
 
@@ -30,7 +37,6 @@ All usage values are calculated using **native OS APIs**, not estimates.
 
 The following features are planned and currently under development:
 
-- [ ] System Health Score indicator  
 - [ ] Improved quality and accuracy of usage metrics  
 - [ ] Enhanced CLI output and formatting  
 - [ ] System problems scanner (errors / weaknesses indicators)  
