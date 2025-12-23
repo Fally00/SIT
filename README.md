@@ -31,6 +31,13 @@ making it useful for learning, diagnostics, and future system monitoring extensi
 - DISK health score based on its usage
 - Overall health score
 
+### CLI 
+- Active cli commands
+- Help & Version commands added
+- System usage commands
+- System info commands
+- System health commands
+- System all for listing all system info , usage & health score 
 
 All usage values are calculated using **native OS APIs**, not estimates.
 
