@@ -21,8 +21,9 @@
 - [x] Adding a Usage indicator 
 - [x] Adjusting main 
 - [x] Adding a System Health Score indicator 
-- [ ] Improving the Quality of the new add-ons
-- [ ] Improving CLI abit 
+- [x] Improving CLI abit 
+- [x] CLI is fixed working and good looking
+- [x] Improving the Quality of the new add-ons all system is accurate and working perfcetly
 - [ ] Adding Problems scanner (Errors/Weakness) in the system indicators 
 - [ ] Adding File integrity checker
 
