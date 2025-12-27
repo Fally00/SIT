@@ -13,6 +13,7 @@
 - [x] Deletion of the unnecessary files that got merged 
 - [x] Improving logic and error handling
 - [ ] For future tools will be added like system scan , maybe more stuff idk yet
+- [ ] Turing it into real app 
 
 =====================================
 
