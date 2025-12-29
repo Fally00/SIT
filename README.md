@@ -111,6 +111,7 @@ The following features are planned and currently under development:
 
 - [ ] System problems scanner (errors / weaknesses indicators)
 - [ ] File integrity checker
+- [ ] Part of a new major project soon !
 
 These additions are designed to keep SIT **lightweight, transparent, and safe**.
 
