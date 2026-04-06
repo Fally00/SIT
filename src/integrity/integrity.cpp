@@ -1,5 +1,5 @@
 // integrity.cpp integration manifest implementation
-#include "integrity.h"
+#include "integrity/integrity.h"
 
 // Standard library includes for succesful implementation
 #include <unordered_map>

@@ -1,4 +1,5 @@
 #pragma once
+#include "formatter/formatter.h"
 #include <string>
 #include <vector>
 
@@ -9,8 +10,10 @@ public:
 private:
     std::vector<std::string> args;
     bool interactive = true;
+    OutputFormat format = OutputFormat::Terminal;
+    bool watchMode = false;
+    int  watchIntervalMs = 1000;
 
-    //system commands implementation 
     void showHelp();
     void showVersion();
     void showInfo();
@@ -18,7 +21,9 @@ private:
     void showHealth();
     void showScan();
     void showAll();
+    void showSchema();
     void showIntegrity(const std::vector<std::string>& tokens);
+    void runWatch(const std::string& command);
     void interactiveMode();
     static std::vector<std::string> tokenize(const std::string& line);
 };
