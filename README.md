@@ -1,184 +1,250 @@
 # SIT — System Insight Toolkit
 
-**SIT** is a lightweight, cross-platform **System Information Toolkit** written in C++.
-It provides essential system details and real-time usage metrics with a clean and minimal design.
-
-The goal of SIT is to offer **clear visibility into system state** without unnecessary complexity,
-making it useful for learning, diagnostics, and future system monitoring extensions.
+**SIT** is a lightweight, cross-platform **system monitoring toolkit** written in C++17.
+It provides real-time system metrics, health scoring, problem scanning, and file integrity checking — with output in **Terminal**, **JSON**, or **CSV** format for easy integration with ML pipelines and monitoring dashboards.
 
 ---
 
 ## Features
 
-![System Start Menu](assest/aassest1.3.png)
+![System Start Menu](assets/aassest1.3.png)
 
 ### System Information
-- Operating System name
-- CPU model
-- Total RAM size
-- Total disk capacity
-- System uptime
-- Current user information
+- Operating system name, CPU model, total RAM, disk capacity, uptime, current user
 
-### System Usage
-- CPU usage percentage
-- RAM usage percentage
-- DISK usage percentage
+### Real-Time Usage
+- CPU, RAM, and disk usage percentages with raw byte values
 
-### System Health Score
-- CPU health score based on its usage
-- RAM health score based on its usage
-- DISK health score based on its usage
-- Overall health score
+### Health Scoring
+- Per-component health labels (Good / Moderate / Critical)
+- Overall composite health score (0–100)
 
 ### Problem Scanner
-- High CPU or RAM usage detection
-- Long uptime detection
-- Overheating detection (when sensors are available)
+- Detects high CPU/RAM usage, long uptimes, and overheating
+- Configurable thresholds via `config.h`
 
 ### File Integrity Checker
-- Project-local integrity manifest
-- SHA-256 hashing for change detection
+- SHA-256 manifest-based change detection
 - Flags changed, missing, or new files
-- Manifest file: `.sit_integrity.manifest` in the chosen root path
 
-```
-Usage
+### Output Formats
+- **Terminal** — ANSI-colored human-readable output (default)
+- **JSON** — structured output for APIs and automation
+- **CSV** — flat rows for ML ingestion and time-series analysis
+- **Schema** — machine-readable field metadata (types, units, ranges)
 
-- integrity init [path] creates a project-local manifest file at .sit_integrity.manifest in the chosen root (default is the current directory).
-- integrity check [path] compares current files to the manifest and reports OK/Changed/Missing/New/Errors.
-- integrity update [path] recreates the manifest when you intentionally changed files and want a new baseline.
-
-```
-
-### CLI 
-- Active cli commands
-- Help & Version commands added
-- System usage commands
-- System info commands
-- System health commands
-- System scan commands
-- System integrity commands
-- System all for listing all system info , usage & health score 
-
-All usage values are calculated using **native OS APIs**, not estimates.
+### Continuous Monitoring
+- `--watch` mode with configurable polling interval
+- Outputs NDJSON or CSV streams for real-time data collection
 
 ---
 
-## Usage
+## Project Structure
 
-SIT supports both command-line and interactive modes.
-
-### Command-Line Mode
-
-```bash
-./sysinfo [command]
 ```
-
-#### Commands
-- `info`     - Show basic system information
-- `usage`    - Show system resource usage
-- `health`   - Show system health status
-- `scan`     - Scan for common system problems
-- `all`      - Show all information
-- `integrity`- Manage file integrity manifest (init/check/update)
-
-#### Options
-- `--help`, `-h`    - Show help message
-- `--version`, `-v` - Show version information
-
-#### Examples
-```bash
-./sysinfo --help
-./sysinfo info
-./sysinfo usage
-./sysinfo health
-./sysinfo scan
-./sysinfo integrity init
-./sysinfo integrity check
-./sysinfo integrity update
-./sysinfo all
+SIT/
+├── CMakeLists.txt              # Build system
+├── README.md
+├── LICENSE
+├── src/
+│   ├── main.cpp                # Entry point
+│   ├── core/                   # Data model & business logic
+│   │   ├── config.h            #   Constants & thresholds
+│   │   ├── systemInfo.h        #   SystemSnapshot struct & accessors
+│   │   ├── systemInfo.cpp
+│   │   ├── health.h            #   Health scoring
+│   │   └── health.cpp
+│   ├── platform/               # OS abstraction layer
+│   │   ├── platform.h          #   Cross-platform interface
+│   │   └── platform.cpp        #   Windows/Linux implementations
+│   ├── cli/                    # Command-line interface
+│   │   ├── cli.h
+│   │   └── cli.cpp
+│   ├── formatter/              # Output formatting
+│   │   ├── formatter.h         #   Terminal, JSON, CSV, Schema
+│   │   └── formatter.cpp
+│   └── integrity/              # File integrity checker
+│       ├── integrity.h
+│       └── integrity.cpp
+├── assets/
+└── .github/workflows/          # CI (Linux + Windows)
 ```
-
-### Interactive Mode
-
-If no arguments are provided, SIT starts in interactive shell mode.
-
-```bash
-./sysinfo
-```
-
-You will see a prompt `sysinfo> ` where you can type commands like `info`, `usage`, `health`, `scan`, `integrity`, `all`, `help`, `version`, or `exit` to quit.
-
-Example session:
-```
-sysinfo> help
-System Information Tool Commands
-
-Commands:
-  info     Show basic system information
-  usage    Show system resource usage
-  health   Show system health status
-  scan     Scan for common system problems
-  integrity init|check|update [path]  File integrity tools
-  all      Show all information
-  help     Show this help message
-  version  Show version information
-  exit     Exit the tool
-
-sysinfo> info
----------- System Basic Info ----------
-...
-sysinfo> exit
-Exiting System Information Tool.
-```
-
----
-
-## Planned Features
-
-The following features are planned and currently under development:
-
-- [x] System problems scanner (errors / weaknesses indicators)
-- [x] File integrity checker
-- [ ] Part of a new major project soon !
-
-These additions are designed to keep SIT **lightweight, transparent, and safe**.
-
----
-
-## Supported Platforms
-
-- **Windows** (via WinAPI)
-- **Linux** (via `/proc` and standard system files)
-
-The codebase uses conditional compilation to keep platform-specific logic isolated.
-
----
-
-## Design Philosophy
-
-- Minimal dependencies
-- Native OS APIs only
-- Clear and readable C++ code
-- No background services or invasive system access
-- Easy to extend without refactoring the core
-
-SIT is intentionally built as a **toolkit**.
 
 ---
 
 ## Build Instructions
 
 ### Requirements
-- C++17 compatible compiler
-- Windows: MinGW / MSVC  
-- Linux: GCC or Clang  
+- **C++17** compatible compiler
+- **CMake 3.16+** (recommended)
+- Windows: MSVC, MinGW, or Clang  ·  Linux: GCC or Clang
 
-### Build (example)
+### Build with CMake (Recommended)
+
 ```bash
-g++ -o sysinfo main.cpp cli.cpp systemInfo.cpp health.cpp integrity.cpp -std=c++17
+# Configure
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-OR
+# Build
+cmake --build build --config Release
 
-.\sysinfo (in VS Code Terminal)
+# Run
+./build/sysinfo --help
+```
+
+### Build with g++ (Manual)
+
+```bash
+# Linux
+g++ -std=c++17 -O2 -Wall -Wextra -Isrc \
+    src/main.cpp src/cli/cli.cpp src/core/systemInfo.cpp \
+    src/core/health.cpp src/platform/platform.cpp \
+    src/formatter/formatter.cpp src/integrity/integrity.cpp \
+    -o sysinfo
+
+# Windows (MinGW)
+g++ -std=c++17 -O2 -Wall -Wextra -Isrc ^
+    src/main.cpp src/cli/cli.cpp src/core/systemInfo.cpp ^
+    src/core/health.cpp src/platform/platform.cpp ^
+    src/formatter/formatter.cpp src/integrity/integrity.cpp ^
+    -o sysinfo.exe -ladvapi32
+```
+
+---
+
+## Usage
+
+### Command-Line Mode
+
+```bash
+./sysinfo [command] [options]
+```
+
+#### Commands
+| Command     | Description |
+|-------------|-------------|
+| `info`      | Show basic system information |
+| `usage`     | Show system resource usage |
+| `health`    | Show system health status |
+| `scan`      | Scan for common system problems |
+| `all`       | Show all information |
+| `schema`    | Print field metadata as JSON |
+| `integrity` | `init\|check\|update [path]` — file integrity tools |
+| `help`      | Show help message |
+| `version`   | Show version information |
+
+#### Options
+| Option                        | Description |
+|-------------------------------|-------------|
+| `--format=json\|csv\|terminal` | Output format (default: terminal) |
+| `--watch`                     | Continuous monitoring mode |
+| `--interval=N`                | Polling interval in ms (default: 1000) |
+
+#### Examples
+
+```bash
+# Basic commands
+./sysinfo info
+./sysinfo usage
+./sysinfo health
+
+# JSON output (for APIs / automation)
+./sysinfo all --format=json
+
+# CSV output (for ML / data science)
+./sysinfo all --format=csv
+
+# Continuous monitoring — NDJSON stream
+./sysinfo usage --format=json --watch --interval=2000
+
+# Continuous monitoring — CSV to file
+./sysinfo usage --format=csv --watch --interval=1000 > metrics.csv
+
+# Field metadata for ML pipelines
+./sysinfo schema
+
+# File integrity
+./sysinfo integrity init
+./sysinfo integrity check
+./sysinfo integrity update
+```
+
+### Interactive Mode
+
+Run without arguments to enter the interactive shell:
+
+```bash
+./sysinfo
+```
+
+```
+   _____ __________
+  / ___//  _/_  __/
+  \__ \ / /  / /
+ ___/ // /  / /
+/____/___/ /_/
+
+System Insight Toolkit v1.3.0
+Type 'help' for commands or 'exit' to quit.
+==============================================
+sysinfo> usage
+sysinfo> health
+sysinfo> exit
+```
+
+---
+
+## Supported Platforms
+
+| Platform | API Used | Status |
+|----------|----------|--------|
+| **Windows** | WinAPI, Registry | ✅ Fully supported |
+| **Linux** | `/proc`, `/sys`, `std::filesystem` | ✅ Fully supported |
+
+CI runs on both `ubuntu-latest` and `windows-latest` via GitHub Actions.
+
+---
+
+## Architecture
+
+```
+┌─────────┐     ┌──────────────┐     ┌──────────────┐
+│  main   │────▶│     CLI      │────▶│  Formatter   │──▶ Terminal / JSON / CSV
+└─────────┘     │  (cli/)      │     │ (formatter/) │
+                └──────┬───────┘     └──────────────┘
+                       │
+                ┌──────▼───────┐     ┌──────────────┐
+                │  SystemInfo  │────▶│   Platform   │──▶ WinAPI / /proc
+                │  (core/)     │     │ (platform/)  │
+                └──────┬───────┘     └──────────────┘
+                       │
+                ┌──────▼───────┐
+                │   Health     │
+                │  (core/)     │
+                └──────────────┘
+```
+
+All OS-specific code is isolated in `platform/`. The rest of the codebase is pure C++17 with no platform conditionals.
+
+---
+
+## Design Philosophy
+
+- **Zero external dependencies** — standard library and native OS APIs only
+- **Layered architecture** — platform → core → formatter → CLI
+- **ML-ready output** — structured JSON, CSV, and schema metadata
+- **Cross-platform** — single codebase, conditional compilation isolated in one module
+- **Lightweight** — no background services or invasive system access
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+### Author
+---
+**Rayan (Fally)**  
+Cybersecurity Student • Systems Engineer • Builder of unnecessarily powerful tools
