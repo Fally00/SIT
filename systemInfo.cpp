@@ -2,9 +2,9 @@
 
 #ifdef _WIN32
 #define UNICODE
-#include <windows.h>          // For Windows API functions
-#include <intrin.h>          // For __cpuid
-#include <cstring>          // For memcpy
+#include <windows.h>                 // For Windows API functions
+#include <intrin.h>                 // For __cpuid
+#include <cstring>                 // For memcpy
 #endif
 
 #include <cstdint>               // For uint64_t
