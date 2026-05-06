@@ -1,36 +1,38 @@
 #include "formatter/formatter.h"
 #include "core/health.h"
 #include "core/config.h"
+#include "ui/colors.h"
 
+#include <cstdio>
 #include <sstream>
 #include <iomanip>
 #include <ctime>
 
 // ── ANSI color constants ─────────────────────────────────────────
-namespace Color {
-    constexpr const char* Reset  = "\033[0m";
-    constexpr const char* Bold   = "\033[1m";
-    constexpr const char* Red    = "\033[31m";
-    constexpr const char* Green  = "\033[32m";
-    constexpr const char* Yellow = "\033[33m";
-    constexpr const char* White  = "\033[37m";
-    constexpr const char* Coffee = "\033[38;5;94m";
-}
-
 static const char* kSep = "==============================================";
 
 // ── JSON helper ──────────────────────────────────────────────────
 static std::string jsonEsc(const std::string& s) {
     std::string o;
     o.reserve(s.size() + 8);
-    for (char c : s) {
-        switch (c) {
+    for (char ch : s) {
+        unsigned char c = static_cast<unsigned char>(ch);
+        switch (ch) {
             case '"':  o += "\\\""; break;
             case '\\': o += "\\\\"; break;
             case '\n': o += "\\n";  break;
             case '\r': o += "\\r";  break;
             case '\t': o += "\\t";  break;
-            default:   o += c;
+            case '\b': o += "\\b";  break;
+            case '\f': o += "\\f";  break;
+            default:
+                if (c < 0x20) {
+                    char buf[7];
+                    std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned int>(c));
+                    o += buf;
+                } else {
+                    o += ch;
+                }
         }
     }
     return o;
@@ -308,7 +310,7 @@ namespace Formatter {
     // ── Schema metadata ─────────────────────────────────────────
 
     std::string schemaInfo() {
-        return R"({
+        return R"JSON({
   "schema_version": "1.0",
   "fields": [
     {"name": "timestamp",            "type": "string",  "unit": "ISO8601",  "description": "Measurement timestamp"},
@@ -328,8 +330,8 @@ namespace Formatter {
     {"name": "ram_health",           "type": "string",  "unit": null,       "enum": ["Good","Moderate","Critical"], "description": "RAM health label"},
     {"name": "disk_health",          "type": "string",  "unit": null,       "enum": ["Good","Moderate","Critical"], "description": "Disk health label"},
     {"name": "overall_score",        "type": "int",     "unit": null,       "range": [0, 100], "description": "Composite health score"}
-  ]
-})";
+    ]
+})JSON";
     }
 
 }

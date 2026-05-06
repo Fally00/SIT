@@ -4,30 +4,134 @@
 #include "integrity/integrity.h"
 #include "core/config.h"
 #include "formatter/formatter.h"
+#include "ui/colors.h"
 
+#include <algorithm>
+#include <cctype>
 #include <string>
 #include <vector>
 #include <iostream>
 #include <sstream>
 #include <filesystem>
+#include <limits>
 #include <thread>
 #include <chrono>
 #include <csignal>
-
-// ANSI helpers (terminal-mode only)
-namespace Color {
-    constexpr const char* Reset  = "\033[0m";
-    constexpr const char* Bold   = "\033[1m";
-    constexpr const char* Red    = "\033[31m";
-    constexpr const char* Green  = "\033[32m";
-    constexpr const char* Yellow = "\033[33m";
-    constexpr const char* White  = "\033[37m";
-    constexpr const char* Coffee = "\033[38;5;94m";
-}
+#include <unordered_map>
 
 // ── Signal handling for --watch mode ─────────────────────────────
-static volatile bool g_running = true;
-static void signalHandler(int) { g_running = false; }
+static volatile std::sig_atomic_t g_running = 1;
+static void signalHandler(int) { g_running = 0; }
+
+namespace {
+    bool isWatchableCommand(const std::string& cmd) {
+        return cmd == "info" || cmd == "usage" || cmd == "health" || cmd == "scan" || cmd == "all";
+    }
+
+    std::string trimWhitespace(const std::string& input) {
+        const auto first = std::find_if_not(input.begin(), input.end(), [](unsigned char ch) {
+            return std::isspace(ch) != 0;
+        });
+        if (first == input.end()) {
+            return {};
+        }
+
+        const auto last = std::find_if_not(input.rbegin(), input.rend(), [](unsigned char ch) {
+            return std::isspace(ch) != 0;
+        }).base();
+        return std::string(first, last);
+    }
+
+    std::string collapseWhitespace(const std::string& input) {
+        std::string normalized;
+        normalized.reserve(input.size());
+
+        bool inWhitespace = false;
+        for (unsigned char ch : input) {
+            if (std::isspace(ch) != 0) {
+                if (!inWhitespace) {
+                    normalized.push_back(' ');
+                    inWhitespace = true;
+                }
+                continue;
+            }
+
+            normalized.push_back(static_cast<char>(ch));
+            inWhitespace = false;
+        }
+
+        return normalized;
+    }
+
+    std::string normalizeInteractiveInput(const std::string& input) {
+        return collapseWhitespace(trimWhitespace(input));
+    }
+
+    std::string toLowerCopy(const std::string& input) {
+        std::string lowered = input;
+        std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char ch) {
+            return static_cast<char>(std::tolower(ch));
+        });
+        return lowered;
+    }
+
+    const std::vector<std::string>& interactiveCommandNames() {
+        static const std::vector<std::string> commands = {
+            "help", "version", "info", "usage", "health",
+            "scan", "all", "schema", "integrity", "exit", "quit"
+        };
+        return commands;
+    }
+
+    size_t levenshteinDistance(const std::string& lhs, const std::string& rhs) {
+        std::vector<size_t> previous(rhs.size() + 1);
+        std::vector<size_t> current(rhs.size() + 1);
+
+        for (size_t j = 0; j <= rhs.size(); ++j) {
+            previous[j] = j;
+        }
+
+        for (size_t i = 0; i < lhs.size(); ++i) {
+            current[0] = i + 1;
+            for (size_t j = 0; j < rhs.size(); ++j) {
+                const size_t insertion = current[j] + 1;
+                const size_t deletion = previous[j + 1] + 1;
+                const size_t substitution = previous[j] + (lhs[i] == rhs[j] ? 0 : 1);
+                current[j + 1] = std::min({ insertion, deletion, substitution });
+            }
+            previous.swap(current);
+        }
+
+        return previous[rhs.size()];
+    }
+
+    std::string findClosestCommand(const std::string& input) {
+        if (input.empty()) {
+            return {};
+        }
+
+        for (const auto& command : interactiveCommandNames()) {
+            if (command.rfind(input, 0) == 0 || input.rfind(command, 0) == 0) {
+                return command;
+            }
+        }
+
+        size_t bestDistance = std::numeric_limits<size_t>::max();
+        std::string bestMatch;
+        for (const auto& command : interactiveCommandNames()) {
+            size_t distance = levenshteinDistance(input, command);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestMatch = command;
+            }
+        }
+
+        if (bestDistance <= 3) {
+            return bestMatch;
+        }
+        return {};
+    }
+}
 
 // ── Constructor ──────────────────────────────────────────────────
 CLI::CLI(int argc, char* argv[]) {
@@ -52,12 +156,31 @@ CLI::CLI(int argc, char* argv[]) {
 }
 
 // ── Run ──────────────────────────────────────────────────────────
-void CLI::run() {
-    if (interactive) { interactiveMode(); return; }
+int CLI::run() {
+    if (watchMode && args.empty()) {
+        std::cerr << Color::Red
+                  << "Error: --watch requires a command (info, usage, health, scan, or all)."
+                  << Color::Reset << std::endl;
+        return 1;
+    }
+
+    if (interactive) {
+        interactiveMode();
+        return 0;
+    }
 
     const std::string& cmd = args[0];
 
-    if (watchMode) { runWatch(cmd); return; }
+    if (watchMode) {
+        if (!isWatchableCommand(cmd)) {
+            std::cerr << Color::Red
+                      << "Error: --watch supports info, usage, health, scan, and all."
+                      << Color::Reset << std::endl;
+            return 1;
+        }
+        runWatch(cmd);
+        return 0;
+    }
 
     if      (cmd == "--help" || cmd == "-h" || cmd == "help")       showHelp();
     else if (cmd == "--version" || cmd == "-v" || cmd == "version") showVersion();
@@ -68,7 +191,11 @@ void CLI::run() {
     else if (cmd == "all")       showAll();
     else if (cmd == "schema")    showSchema();
     else if (cmd == "integrity") showIntegrity(args);
-    else std::cout << Color::Red << "Unknown command. Use --help for usage." << Color::Reset << std::endl;
+    else {
+        std::cout << Color::Red << "Unknown command. Use --help for usage." << Color::Reset << std::endl;
+        return 1;
+    }
+    return 0;
 }
 
 // ── Help ─────────────────────────────────────────────────────────
@@ -87,7 +214,7 @@ void CLI::showHelp() {
               << Color::Red    << "  << exit >>    Exit the tool\n\n"
               << Color::Coffee << "Options:\n"
               << Color::White  << "  --format=json|csv|terminal  Output format (default: terminal)\n"
-              << Color::White  << "  --watch                     Continuous monitoring (Ctrl+C to stop)\n"
+              << Color::White  << "  --watch                     Continuous monitoring for info|usage|health|scan|all (Ctrl+C to stop)\n"
               << Color::White  << "  --interval=N                Polling interval in ms (default: 1000)\n"
               << Color::Reset  << std::endl;
 }
@@ -159,6 +286,39 @@ void CLI::runWatch(const std::string& cmd) {
 }
 
 // ── Integrity ────────────────────────────────────────────────────
+bool CLI::dispatchInteractiveCommand(const std::vector<std::string>& tokens, const std::string& input) {
+    using InteractiveHandler = bool (CLI::*)(const std::vector<std::string>&);
+    static const std::unordered_map<std::string, InteractiveHandler> kCommandTable = {
+        { "exit",      &CLI::handleInteractiveExit },
+        { "quit",      &CLI::handleInteractiveExit },
+        { "help",      &CLI::handleInteractiveHelp },
+        { "version",   &CLI::handleInteractiveVersion },
+        { "info",      &CLI::handleInteractiveInfo },
+        { "usage",     &CLI::handleInteractiveUsage },
+        { "health",    &CLI::handleInteractiveHealth },
+        { "scan",      &CLI::handleInteractiveScan },
+        { "all",       &CLI::handleInteractiveAll },
+        { "schema",    &CLI::handleInteractiveSchema },
+        { "integrity", &CLI::handleInteractiveIntegrity },
+    };
+
+    auto found = kCommandTable.find(tokens[0]);
+    if (found != kCommandTable.end()) {
+        return (this->*found->second)(tokens);
+    }
+
+    std::cout << Color::Red
+              << "Unknown command: '" << input << "'. Type 'help' for available commands."
+              << Color::Reset << std::endl;
+
+    std::string suggestion = findClosestCommand(tokens[0]);
+    if (!suggestion.empty()) {
+        std::cout << Color::Yellow << "did you mean: " << suggestion << "?" << Color::Reset << std::endl;
+    }
+
+    return true;
+}
+
 void CLI::showIntegrity(const std::vector<std::string>& tokens) {
     std::cout << Color::Yellow << Color::Bold << "---------- File Integrity ----------" << Color::Reset << std::endl;
     if (tokens.size() < 2) {
@@ -227,6 +387,56 @@ std::vector<std::string> CLI::tokenize(const std::string& line) {
 }
 
 // ── Interactive Mode ─────────────────────────────────────────────
+bool CLI::handleInteractiveExit(const std::vector<std::string>&) {
+    std::cout << Color::Red << "Exiting " << Config::kAppName << "." << Color::Reset << std::endl;
+    return false;
+}
+
+bool CLI::handleInteractiveHelp(const std::vector<std::string>&) {
+    showHelp();
+    return true;
+}
+
+bool CLI::handleInteractiveVersion(const std::vector<std::string>&) {
+    showVersion();
+    return true;
+}
+
+bool CLI::handleInteractiveInfo(const std::vector<std::string>&) {
+    showInfo();
+    return true;
+}
+
+bool CLI::handleInteractiveUsage(const std::vector<std::string>&) {
+    showUsage();
+    return true;
+}
+
+bool CLI::handleInteractiveHealth(const std::vector<std::string>&) {
+    showHealth();
+    return true;
+}
+
+bool CLI::handleInteractiveScan(const std::vector<std::string>&) {
+    showScan();
+    return true;
+}
+
+bool CLI::handleInteractiveAll(const std::vector<std::string>&) {
+    showAll();
+    return true;
+}
+
+bool CLI::handleInteractiveSchema(const std::vector<std::string>&) {
+    showSchema();
+    return true;
+}
+
+bool CLI::handleInteractiveIntegrity(const std::vector<std::string>& tokens) {
+    showIntegrity(tokens);
+    return true;
+}
+
 void CLI::interactiveMode() {
     const std::string logo = R"(
    _____ __________
@@ -250,20 +460,17 @@ void CLI::interactiveMode() {
             std::cout << Color::Red << "Input closed. Exiting " << Config::kAppName << "." << Color::Reset << std::endl;
             break;
         }
-        std::vector<std::string> tokens = tokenize(command);
+        std::string normalizedInput = normalizeInteractiveInput(command);
+        std::vector<std::string> tokens = tokenize(normalizedInput);
         if (tokens.empty()) continue;
 
-        const std::string& cmd = tokens[0];
-        if      (cmd == "exit" || cmd == "quit") { std::cout << Color::Red << "Exiting " << Config::kAppName << "." << Color::Reset << std::endl; break; }
-        else if (cmd == "help")      showHelp();
-        else if (cmd == "version")   showVersion();
-        else if (cmd == "info")      showInfo();
-        else if (cmd == "usage")     showUsage();
-        else if (cmd == "health")    showHealth();
-        else if (cmd == "scan")      showScan();
-        else if (cmd == "schema")    showSchema();
-        else if (cmd == "integrity") showIntegrity(tokens);
-        else if (cmd == "all")       showAll();
-        else std::cout << Color::Red << "Unknown command. Type 'help' for available commands." << Color::Reset << std::endl;
+        tokens[0] = toLowerCopy(tokens[0]);
+        if (tokens[0] == "integrity" && tokens.size() > 1) {
+            tokens[1] = toLowerCopy(tokens[1]);
+        }
+
+        if (!dispatchInteractiveCommand(tokens, normalizedInput)) {
+            break;
+        }
     }
 }

@@ -10,46 +10,12 @@
 #include <filesystem>
 #include <cstdlib>
 #endif
+#include <iomanip>
 
 #include <algorithm>
+#include <set>
 
 namespace Platform {
-
-std::string getOsName() {
-#ifdef _WIN32
-    HKEY hKey;
-    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
-                      "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
-                      0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        char name[256] = {0};
-        DWORD size = sizeof(name);
-        DWORD type = REG_SZ;
-        if (RegQueryValueExA(hKey, "ProductName", nullptr, &type,
-                             reinterpret_cast<LPBYTE>(name), &size) == ERROR_SUCCESS) {
-            RegCloseKey(hKey);
-            return std::string(name);
-        }
-        RegCloseKey(hKey);
-    }
-    return "Windows (unknown edition)";
-#else
-    std::ifstream file("/etc/os-release");
-    if (!file.is_open()) return "Linux (unknown)";
-    std::string line;
-    while (std::getline(file, line)) {
-        if (line.find("PRETTY_NAME") != std::string::npos) {
-            size_t eq = line.find('=');
-            if (eq != std::string::npos) {
-                std::string val = line.substr(eq + 1);
-                if (val.size() >= 2 && val.front() == '"' && val.back() == '"')
-                    val = val.substr(1, val.size() - 2);
-                return val;
-            }
-        }
-    }
-    return "Linux";
-#endif
-}
 
 std::string getCpuModel() {
 #ifdef _WIN32
@@ -180,13 +146,16 @@ std::vector<DiskInfo> getAllDisks() {
     std::vector<DiskInfo> disks;
 #ifdef _WIN32
     DWORD drives = GetLogicalDrives();
+    std::set<std::string> seenMountPoints;
     for (int i = 0; i < 26; ++i) {
         if (!(drives & (1u << i))) continue;
         char root[] = { static_cast<char>('A' + i), ':', '\\', '\0' };
         UINT type = GetDriveTypeA(root);
         if (type != DRIVE_FIXED && type != DRIVE_REMOVABLE) continue;
+        std::string mountPoint = root;
+        if (!seenMountPoints.insert(mountPoint).second) continue;
         DiskInfo d;
-        d.mountPoint = root;
+        d.mountPoint = mountPoint;
         ULARGE_INTEGER total, free_;
         if (GetDiskFreeSpaceExA(root, NULL, &total, &free_)) {
             d.totalBytes = total.QuadPart;
@@ -197,6 +166,7 @@ std::vector<DiskInfo> getAllDisks() {
 #else
     std::ifstream mounts("/proc/mounts");
     if (mounts.is_open()) {
+        std::set<std::string> seenMountPoints;
         std::string line;
         while (std::getline(mounts, line)) {
             std::istringstream iss(line);
@@ -207,19 +177,13 @@ std::vector<DiskInfo> getAllDisks() {
             try {
                 auto sp = std::filesystem::space(mp);
                 if (sp.capacity == 0) continue;
-                bool duplicate = false;
-                for (const auto& existing : disks) {
-                    if (existing.totalBytes == sp.capacity && existing.freeBytes == sp.free) {
-                        duplicate = true; break;
-                    }
-                }
-                if (!duplicate) {
-                    DiskInfo d;
-                    d.mountPoint = mp;
-                    d.totalBytes = sp.capacity;
-                    d.freeBytes  = sp.free;
-                    disks.push_back(d);
-                }
+                if (!seenMountPoints.insert(mp).second) continue;
+
+                DiskInfo d;
+                d.mountPoint = mp;
+                d.totalBytes = sp.capacity;
+                d.freeBytes  = sp.free;
+                disks.push_back(d);
             } catch (...) {}
         }
     }
@@ -238,6 +202,26 @@ int64_t getUptimeSeconds() {
     if (!(file >> seconds)) return 0;
     return static_cast<int64_t>(seconds);
 #endif
+
 }
+#if !defined(_WIN32)
+    std::string getOsName() {
+        std::ifstream file("/etc/os-release");
+        if (!file.is_open()) return "Linux (unknown)";
+        std::string line;
+        while (std::getline(file, line)) {
+            if (line.find("PRETTY_NAME") != std::string::npos) {
+                size_t eq = line.find('=');
+                if (eq != std::string::npos) {
+                    std::string val = line.substr(eq + 1);
+                    if (val.size() >= 2 && val.front() == '"' && val.back() == '"')
+                        val = val.substr(1, val.size() - 2);
+                    return val;
+                }
+            }
+        }
+        return "Linux";
+    }
+#endif
 
 } // namespace Platform
