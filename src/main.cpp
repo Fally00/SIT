@@ -3,6 +3,5 @@
 
 int main(int argc, char* argv[]) {
     CLI cli(argc, argv);
-    cli.run();
-    return 0;
+    return cli.run();
 }

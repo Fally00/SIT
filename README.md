@@ -7,7 +7,7 @@ It provides real-time system metrics, health scoring, problem scanning, and file
 
 ## Features
 
-![System Start Menu](assets/aassest1.3.png)
+![System Start Menu](assets/sit.png)
 
 ### System Information
 - Operating system name, CPU model, total RAM, disk capacity, uptime, current user
@@ -56,7 +56,8 @@ SIT/
 │   │   └── health.cpp
 │   ├── platform/               # OS abstraction layer
 │   │   ├── platform.h          #   Cross-platform interface
-│   │   └── platform.cpp        #   Windows/Linux implementations
+│   │   ├── platform.cpp        #   Windows/Linux implementations
+│   │   └── platform_win.cpp    #   Windows-specific implementations
 │   ├── cli/                    # Command-line interface
 │   │   ├── cli.h
 │   │   └── cli.cpp
@@ -105,7 +106,7 @@ g++ -std=c++17 -O2 -Wall -Wextra -Isrc \
 # Windows (MinGW)
 g++ -std=c++17 -O2 -Wall -Wextra -Isrc ^
     src/main.cpp src/cli/cli.cpp src/core/systemInfo.cpp ^
-    src/core/health.cpp src/platform/platform.cpp ^
+    src/core/health.cpp src/platform/platform.cpp src/platform/platform_win.cpp ^
     src/formatter/formatter.cpp src/integrity/integrity.cpp ^
     -o sysinfo.exe -ladvapi32
 ```
@@ -180,8 +181,8 @@ Run without arguments to enter the interactive shell:
 ```
    _____ __________
   / ___//  _/_  __/
-  \__ \ / /  / /
- ___/ // /  / /
+  \__ \ /  / / /
+ ___/ //  / / /
 /____/___/ /_/
 
 System Insight Toolkit v1.3.0
@@ -244,7 +245,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-### Author
+## Author
+
 ---
-**Rayan (Fally)**  
+**Rayan (Fally)**
 Cybersecurity Student • Systems Engineer • Builder of unnecessarily powerful tools

@@ -15,6 +15,7 @@ set(SIT_SOURCES
     src/core/systemInfo.cpp
     src/core/health.cpp
     src/platform/platform.cpp
+    src/platform/platform_win.cpp
     src/cli/cli.cpp
     src/formatter/formatter.cpp
     src/integrity/integrity.cpp
@@ -25,9 +26,20 @@ add_executable(sysinfo ${SIT_SOURCES})
 # All project headers are referenced relative to src/
 target_include_directories(sysinfo PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
+# On Windows, provide OpenSSL to CMake by setting OPENSSL_ROOT_DIR
+# (for example: -DOPENSSL_ROOT_DIR=C:/path/to/openssl) or by using a
+# toolchain such as vcpkg that exposes OpenSSL to find_package().
+if(WIN32 AND NOT DEFINED OPENSSL_ROOT_DIR)
+    message(WARNING "OPENSSL_ROOT_DIR is not set. See the comment above find_package(OpenSSL REQUIRED) for Windows configuration guidance.")
+endif()
+
+find_package(OpenSSL REQUIRED)
+
 # ── Platform-specific linking ─────────────────────────────────────
 if(WIN32)
-    target_link_libraries(sysinfo PRIVATE advapi32)
+    target_link_libraries(sysinfo PRIVATE advapi32 OpenSSL::Crypto)
+else()
+    target_link_libraries(sysinfo PRIVATE OpenSSL::Crypto)
 endif()
 
 # ── Compiler warnings ────────────────────────────────────────────
